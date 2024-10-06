@@ -39,4 +39,7 @@ public record PixelPosition(int X, int Y) : IComparable<PixelPosition>
 	{
 		return (int)Math.Sqrt(Math.Pow(X, 2) + Math.Pow(Y, 2));
 	}
+
+	public static IReadOnlyList<PixelPosition> OrthogonalUnitVectors { get; } = [new(0, 1), new(0, -1), new(1, 0), new(-1, 0)];
+	public static IReadOnlyList<PixelPosition> OrthogonalAndDiagonalUnitVectors { get; } = [new(0, 1), new(0, -1), new(1, 0), new(-1, 0), new(1, 1), new(1, -1), new(1, -1), new(-1, -1)];
 }
