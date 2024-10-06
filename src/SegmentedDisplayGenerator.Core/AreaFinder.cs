@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Immutable;
 
 namespace SegmentedDisplayGenerator.Core;
 
@@ -14,19 +15,31 @@ public static class AreaFinder
 	/// <returns>The pixels, clustered into areas.</returns>
 	public static IEnumerable<IList<PixelPosition>> FindAreas(ICollection<PixelPosition> targetPixels)
 	{
-		targetPixels = targetPixels.ToList();
-		while (targetPixels.Count != 0)
+		var searchSpace = targetPixels.ToList();
+		searchSpace.Sort();
+
+		while (searchSpace.Count != 0)
 		{
-			var currentList = new List<PixelPosition>(targetPixels.Count / 10);
-			foreach (var pixel in targetPixels)
+			var currentList = new SortedSet<PixelPosition> { searchSpace.First() };
+
+			int newlyAddedCount;
+			do
 			{
-				if (currentList is [] || currentList.Any(p => (p - pixel).MagnitudeManhattan() <= 1))
+				newlyAddedCount = 0;
+				foreach (var pixel in currentList.ToArray())
 				{
-					currentList.Add(pixel);
+					foreach(var neighbor in PixelPosition.OrthogonalUnitVectors.Select(v => v + pixel))
+					if (searchSpace.BinarySearch(neighbor) >= 0)
+					{
+						if (currentList.Add(neighbor)) newlyAddedCount += 1;
+					}
 				}
-			}
-			currentList.ForEach(p => targetPixels.Remove(p));
-			yield return currentList;
+			} while (newlyAddedCount > 0);
+
+			foreach (var pixel in currentList)
+				searchSpace.Remove(pixel);
+
+			yield return currentList.ToArray();
 		}
 	}
 }
