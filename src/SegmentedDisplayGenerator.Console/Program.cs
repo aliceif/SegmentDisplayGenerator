@@ -5,7 +5,7 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
 
 const string sampleImagePath = @"template.png";
-var outFolder = $@".{Path.PathSeparator}out{Path.PathSeparator}";
+var outFolder = $@".{Path.DirectorySeparatorChar}out{Path.DirectorySeparatorChar}";
 
 var activeSegmentColor = new Rgb24(255, 0, 0);
 var inactiveSegmentColor = new Rgb24(0x60, 0x60, 0x60);
