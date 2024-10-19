@@ -19,11 +19,13 @@ public static class ImageProcessing
 		}
 	}
 
-	public static Image<Rgb24> CreateDyedImage(Image<Rgb24> image, IEnumerable<IList<PixelPosition>> areas, Rgb24 color)
+	public static Image<Rgb24> CreateDyedImage(Image<Rgb24> image, IEnumerable<IList<PixelPosition>> areas, Color color)
 	{
+		var pixelColor = color.ToPixel<Rgb24>();
 		var output = image.Clone();
-		foreach(var pixel in areas.SelectMany(x => x)){
-			output[pixel.X, pixel.Y] = color;
+		foreach (var pixel in areas.SelectMany(x => x))
+		{
+			output[pixel.X, pixel.Y] = pixelColor;
 		}
 		return output;
 	}
