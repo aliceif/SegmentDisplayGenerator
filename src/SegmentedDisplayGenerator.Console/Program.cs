@@ -15,7 +15,9 @@ class Program
 		var rootCommand = new RootCommand("Program for generating segment display graphics");
 
 		var templateOption = new Option<FileInfo?>(name: "--template", description: "the template file for generating the graphics");
+		templateOption.AddAlias("-t");
 		var outputOption = new Option<DirectoryInfo?>(name: "--output", description: "the directory to output the generated graphics in");
+		outputOption.AddAlias("-o");
 		var litOption = new Option<Color?>(name: "--lit-segment-color", description: "the color to fill lit segments",
 		parseArgument: result =>
 		{
@@ -27,6 +29,7 @@ class Program
 			}
 			else { return litColor; };
 		});
+		litOption.AddAlias("-l");
 		var unlitOption = new Option<Color?>(name: "--unlit-segment-color", description: "the color to fill unlit segments",
 		parseArgument: result =>
 		{
@@ -44,6 +47,7 @@ class Program
 				return litColor;
 			};
 		});
+		unlitOption.AddAlias("-u");
 
 		rootCommand.AddOption(templateOption);
 		rootCommand.AddOption(outputOption);
