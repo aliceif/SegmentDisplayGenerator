@@ -39,7 +39,7 @@ class Program
 			}
 			if (!Color.TryParse(result.Tokens.Single().Value, out var litColor))
 			{
-				result.ErrorMessage = "The color was not recgonized. Try using hex notation like in HTML.";
+				result.ErrorMessage = "The color was not recognized. Try using hex notation like in HTML.";
 				return null;
 			}
 			else
