@@ -76,6 +76,12 @@ class Program
 
 		var areaIndex = 1;
 		var subsets = ListOperations.CreateSubsets(areas).ToArray();
+
+		if (subsets.Length > 1)
+		{
+			output.Create();
+		}
+
 		foreach (var permutation in subsets)
 		{
 			System.Console.WriteLine($"Creating picture {areaIndex:000}");
