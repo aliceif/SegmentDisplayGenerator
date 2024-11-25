@@ -79,8 +79,8 @@ class Program
 		foreach (var permutation in subsets)
 		{
 			System.Console.WriteLine($"Creating picture {areaIndex:000}");
-			var activedImage = ImageProcessing.CreateDyedImage(image, permutation, lit.Value);
-			activedImage.SaveAsPng(Path.Join(output.FullName, $"{areaIndex:000}.png"));
+			var activedImage = ImageProcessing.CreateDyedImage(image, permutation.Subset, lit.Value);
+			activedImage.SaveAsPng(Path.Join(output.FullName, $"{permutation.Tag}.png"));
 			++areaIndex;
 		}
 
