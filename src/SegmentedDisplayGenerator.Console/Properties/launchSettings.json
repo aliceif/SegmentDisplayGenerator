@@ -2,7 +2,7 @@
 	"$schema": "http://json.schemastore.org/launchsettings.json",
 	"profiles": 
 	{
-		"Test With Files" : {
+		"Launch help" : {
 			"commandName": "Project",
 			"commandLineArgs": "--help"
 		}
