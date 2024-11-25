@@ -10,7 +10,7 @@ public static class ListOperations
 		IEnumerable<TaggedSubset<T>> subsets = [new TaggedSubset<T>("0", []), new TaggedSubset<T>("1", [items.First()])];
 		foreach (var item in items.Skip(1))
 		{
-			subsets = subsets.SelectMany(s => new TaggedSubset<T>[] { s with { Tag = "0" + s.Tag }, s with { Tag = "1" + s.Tag, Subset = s.Subset.Append(item) } });
+			subsets = subsets.SelectMany(s => new TaggedSubset<T>[] { s with { Tag = s.Tag + "0" }, s with { Tag = s.Tag + "1", Subset = s.Subset.Append(item) } });
 		}
 		return subsets;
 	}
