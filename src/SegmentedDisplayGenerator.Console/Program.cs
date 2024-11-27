@@ -55,7 +55,7 @@ class Program
 		unlitOption.AddAlias("-u");
 
 		rootCommand.AddGlobalOption(templateOption);
-		rootCommand.AddGlobalOption(outputOption);
+		rootCommand.AddOption(outputOption);
 		rootCommand.AddOption(litOption);
 		rootCommand.AddOption(unlitOption);
 
@@ -104,7 +104,6 @@ class Program
 	{
 		System.Console.WriteLine("Processing...");
 		ArgumentNullException.ThrowIfNull(template);
-		ArgumentNullException.ThrowIfNull(output);
 		var image = await Image.LoadAsync<Rgb24>(template.FullName);
 
 		PixelPosition[] targetPixels = ImageProcessing.ParsePixels(image).ToArray();
@@ -131,6 +130,32 @@ class Program
 		}
 
 		System.Console.WriteLine(plainPreviewBuilder);
+
+		var areaPreviewBuilder = new StringBuilder(image.Width * image.Height);
+
+		if (areas.Length <= 36)
+		{
+			var areaPixels = areas.SelectMany((area, areaNumber) => area.Select(position => (position, areaNumber: areaNumber + 1))).ToDictionary(t => t.position, t => t.areaNumber);
+
+			for (int y = 0; y < image.Height; ++y)
+			{
+				for (int x = 0; x < image.Width; ++x)
+				{
+
+					if (areaPixels.TryGetValue(new PixelPosition(x, y), out var area))
+					{
+						areaPreviewBuilder.Append(area < 10 ? area.ToString() : area - 10 + 'A');
+					}
+					else
+					{
+						areaPreviewBuilder.Append(".");
+					}
+				}
+				areaPreviewBuilder.AppendLine();
+			}
+		}
+
+		System.Console.WriteLine(areaPreviewBuilder);
 
 		System.Console.WriteLine("done.");
 	}
