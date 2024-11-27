@@ -1,8 +1,10 @@
 ﻿using System.CommandLine;
+using System.Text;
 
 using SegmentedDisplayGenerator.Core;
 
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.ColorSpaces;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
@@ -13,6 +15,9 @@ class Program
 	static async Task<int> Main(string[] args)
 	{
 		var rootCommand = new RootCommand("Program for generating segment display graphics");
+
+		var previewCommand = new Command(name: "preview", description: "Prints out a preview of the segments");
+		rootCommand.AddCommand(previewCommand);
 
 		var templateOption = new Option<FileInfo?>(name: "--template", description: "the template file for generating the graphics");
 		templateOption.AddAlias("-t");
@@ -49,12 +54,14 @@ class Program
 		});
 		unlitOption.AddAlias("-u");
 
-		rootCommand.AddOption(templateOption);
-		rootCommand.AddOption(outputOption);
+		rootCommand.AddGlobalOption(templateOption);
+		rootCommand.AddGlobalOption(outputOption);
 		rootCommand.AddOption(litOption);
 		rootCommand.AddOption(unlitOption);
 
 		rootCommand.SetHandler(Generate, templateOption, outputOption, litOption, unlitOption);
+
+		previewCommand.SetHandler(Preview, templateOption, outputOption);
 
 		return await rootCommand.InvokeAsync(args);
 	}
@@ -89,6 +96,41 @@ class Program
 			activeImage.SaveAsPng(Path.Join(output.FullName, $"{permutation.Tag}.png"));
 			++areaIndex;
 		}
+
+		System.Console.WriteLine("done.");
+	}
+
+	private static async Task Preview(FileInfo? template, DirectoryInfo? output)
+	{
+		System.Console.WriteLine("Processing...");
+		ArgumentNullException.ThrowIfNull(template);
+		ArgumentNullException.ThrowIfNull(output);
+		var image = await Image.LoadAsync<Rgb24>(template.FullName);
+
+		PixelPosition[] targetPixels = ImageProcessing.ParsePixels(image).ToArray();
+		var areas = AreaFinder.FindAreas(targetPixels).ToArray();
+
+		System.Console.WriteLine($"Areas detected: {areas.Length}");
+
+		var plainPreviewBuilder = new StringBuilder(image.Width * image.Height);
+
+		for (int y = 0; y < image.Height; ++y)
+		{
+			for (int x = 0; x < image.Width; ++x)
+			{
+				if (targetPixels.Contains(new PixelPosition(x, y)))
+				{
+					plainPreviewBuilder.Append("#");
+				}
+				else
+				{
+					plainPreviewBuilder.Append(".");
+				}
+			}
+			plainPreviewBuilder.AppendLine();
+		}
+
+		System.Console.WriteLine(plainPreviewBuilder);
 
 		System.Console.WriteLine("done.");
 	}
