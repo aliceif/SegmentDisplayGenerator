@@ -4,9 +4,7 @@ using System.Text;
 using SegmentedDisplayGenerator.Core;
 
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.ColorSpaces;
 using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp.Processing;
 
 namespace SegmentedDisplayGenerator.Console;
 
