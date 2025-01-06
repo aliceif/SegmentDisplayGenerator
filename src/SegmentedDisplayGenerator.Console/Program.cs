@@ -102,18 +102,18 @@ class Program
 	{
 		System.Console.WriteLine("Processing...");
 		ArgumentNullException.ThrowIfNull(template);
-		var image = await Image.LoadAsync<Rgb24>(template.FullName);
+		using var templateImage = await Image.LoadAsync<Rgb24>(template.FullName);
 
-		PixelPosition[] targetPixels = ImageProcessing.ParsePixels(image).ToArray();
+		PixelPosition[] targetPixels = ImageProcessing.ParsePixels(templateImage).ToArray();
 		var areas = AreaFinder.FindAreas(targetPixels).ToArray();
 
 		System.Console.WriteLine($"Areas detected: {areas.Length}");
 
-		var plainPreviewBuilder = new StringBuilder(image.Width * image.Height);
+		var plainPreviewBuilder = new StringBuilder(templateImage.Width * templateImage.Height);
 
-		for (int y = 0; y < image.Height; ++y)
+		for (int y = 0; y < templateImage.Height; ++y)
 		{
-			for (int x = 0; x < image.Width; ++x)
+			for (int x = 0; x < templateImage.Width; ++x)
 			{
 				if (targetPixels.Contains(new PixelPosition(x, y)))
 				{
@@ -129,15 +129,15 @@ class Program
 
 		System.Console.WriteLine(plainPreviewBuilder);
 
-		var areaPreviewBuilder = new StringBuilder(image.Width * image.Height);
+		var areaPreviewBuilder = new StringBuilder(templateImage.Width * templateImage.Height);
 
 		if (areas.Length <= 36)
 		{
 			var areaPixels = areas.SelectMany((area, areaNumber) => area.Select(position => (position, areaNumber: areaNumber + 1))).ToDictionary(t => t.position, t => t.areaNumber);
 
-			for (int y = 0; y < image.Height; ++y)
+			for (int y = 0; y < templateImage.Height; ++y)
 			{
-				for (int x = 0; x < image.Width; ++x)
+				for (int x = 0; x < templateImage.Width; ++x)
 				{
 
 					if (areaPixels.TryGetValue(new PixelPosition(x, y), out var area))
