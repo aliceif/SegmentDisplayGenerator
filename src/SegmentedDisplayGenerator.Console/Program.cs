@@ -66,13 +66,13 @@ class Program
 		ArgumentNullException.ThrowIfNull(output);
 		lit ??= Color.Red;
 		unlit ??= Color.DimGray;
-		var image = await Image.LoadAsync<Rgb24>(template.FullName);
+		using var templateImage = await Image.LoadAsync<Rgb24>(template.FullName);
 
-		var areas = AreaFinder.FindAreas(ImageProcessing.ParsePixels(image).ToArray()).ToArray();
+		var areas = AreaFinder.FindAreas(ImageProcessing.ParsePixels(templateImage).ToArray()).ToArray();
 
 		System.Console.WriteLine($"Areas detected: {areas.Length}");
 
-		image = ImageProcessing.CreateDyedImage(image, areas, unlit.Value);
+		using var baseImage = ImageProcessing.CreateDyedImage(templateImage, areas, unlit.Value);
 
 		var areaIndex = 1;
 		var subsets = ListOperations.CreateSubsets(areas).ToArray();
@@ -85,8 +85,8 @@ class Program
 		foreach (var permutation in subsets)
 		{
 			System.Console.WriteLine($"Creating picture {areaIndex:000}");
-			var activedImage = ImageProcessing.CreateDyedImage(image, permutation.Subset, lit.Value);
-			activedImage.SaveAsPng(Path.Join(output.FullName, $"{permutation.Tag}.png"));
+			using var activeImage = ImageProcessing.CreateDyedImage(baseImage, permutation.Subset, lit.Value);
+			activeImage.SaveAsPng(Path.Join(output.FullName, $"{permutation.Tag}.png"));
 			++areaIndex;
 		}
 
