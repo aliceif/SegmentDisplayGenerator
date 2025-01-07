@@ -2,6 +2,7 @@
 using System.Text;
 
 using SegmentedDisplayGenerator.Core;
+using SegmentedDisplayGenerator.Core.Export;
 
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -87,12 +88,15 @@ class Program
 			output.Create();
 		}
 
-		foreach (var permutation in subsets)
+		using (FolderExportWriter folderExportWriter = new(output.FullName))
 		{
-			System.Console.WriteLine($"Creating picture {areaIndex:000}");
-			using var activeImage = ImageProcessing.CreateDyedImage(baseImage, permutation.Subset, lit.Value);
-			activeImage.SaveAsPng(Path.Join(output.FullName, $"{permutation.Tag}.png"));
-			++areaIndex;
+			foreach (var permutation in subsets)
+			{
+				System.Console.WriteLine($"Creating picture {areaIndex:000}");
+				using var activeImage = ImageProcessing.CreateDyedImage(baseImage, permutation.Subset, lit.Value);
+				folderExportWriter.Add(activeImage, permutation.Tag);
+				++areaIndex;
+			}
 		}
 
 		System.Console.WriteLine("done.");
