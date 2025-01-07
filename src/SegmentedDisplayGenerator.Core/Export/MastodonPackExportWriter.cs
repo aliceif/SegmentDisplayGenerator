@@ -1,4 +1,5 @@
 using System.Formats.Tar;
+using System.IO.Compression;
 
 using SixLabors.ImageSharp;
 
@@ -8,14 +9,16 @@ public class MastodonPackExportWriter : IExportWriter
 {
 	private bool _disposed = false;
 	private readonly FileStream _fileStream;
+	private readonly GZipStream _gZipStream;
 	private readonly TarWriter _tarWriter;
 	private readonly string _fullPath;
 
 	public MastodonPackExportWriter(string folderPath, string fileName)
 	{
-		_fullPath = Path.Join(folderPath, fileName + ".tar");
+		_fullPath = Path.Join(folderPath, fileName + ".tar.gz");
 		_fileStream = File.Create(_fullPath);
-		_tarWriter = new TarWriter(_fileStream);
+		_gZipStream = new GZipStream(_fileStream, CompressionMode.Compress);
+		_tarWriter = new TarWriter(_gZipStream);
 	}
 
 	public void Add(Image image, string name)
@@ -38,6 +41,7 @@ public class MastodonPackExportWriter : IExportWriter
 		if (disposing)
 		{
 			_tarWriter.Dispose();
+			_gZipStream.Dispose();
 			_fileStream.Dispose();
 		}
 
