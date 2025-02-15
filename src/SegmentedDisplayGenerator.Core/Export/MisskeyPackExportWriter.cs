@@ -1,6 +1,8 @@
 using System.IO.Compression;
 using System.Text.Json;
 
+using SegmentedDisplayGenerator.Core.Export.Model;
+
 using SixLabors.ImageSharp;
 
 namespace SegmentedDisplayGenerator.Core.Export;
