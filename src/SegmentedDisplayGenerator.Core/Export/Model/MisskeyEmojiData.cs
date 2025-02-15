@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace SegmentedDisplayGenerator.Core;
+﻿namespace SegmentedDisplayGenerator.Core.Export.Model;
 
 public class MisskeyEmojiData
 {

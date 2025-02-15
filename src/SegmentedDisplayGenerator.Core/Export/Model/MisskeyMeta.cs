@@ -1,4 +1,4 @@
-﻿namespace SegmentedDisplayGenerator.Core;
+﻿namespace SegmentedDisplayGenerator.Core.Export.Model;
 
 public class MisskeyMeta
 {
