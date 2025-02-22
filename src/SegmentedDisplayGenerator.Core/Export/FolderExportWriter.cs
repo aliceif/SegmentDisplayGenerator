@@ -7,9 +7,10 @@ public class FolderExportWriter : IExportWriter
 	private bool _disposed = false;
 	private readonly string _folderPath;
 
-	public FolderExportWriter(string folderPath)
+	public FolderExportWriter(string folderPath, string packageName)
 	{
-		_folderPath = folderPath;
+		_folderPath = Path.Join(folderPath, packageName);
+		Directory.CreateDirectory(_folderPath);
 	}
 
 	public void Add(Image image, string name)
