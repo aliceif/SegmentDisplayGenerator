@@ -18,10 +18,15 @@ class Program
 		var previewCommand = new Command(name: "preview", description: "Prints out a preview of the segments");
 		rootCommand.AddCommand(previewCommand);
 
-		var templateOption = new Option<FileInfo?>(name: "--template", description: "the template file for generating the graphics");
+		var templateOption = new Option<FileInfo?>(name: "--template", description: "the template file for generating the graphics") { IsRequired = true };
 		templateOption.AddAlias("-t");
-		var outputOption = new Option<DirectoryInfo?>(name: "--output", description: "the directory to output the generated graphics in");
+		var outputOption = new Option<DirectoryInfo?>(name: "--output", description: "the directory to output the generated graphics in") { IsRequired = true };
 		outputOption.AddAlias("-o");
+		var packageTypeOption = new Option<PackageType>(name: "--packageType", description: "the package type to use for the output");
+		packageTypeOption.AddAlias("-p");
+		packageTypeOption.SetDefaultValue(PackageType.Folder);
+		var packageNameOption = new Option<string>(name: "--packageName", description: "the package name to use for the output") { IsRequired = true };
+		packageNameOption.AddAlias("-n");
 		var litOption = new Option<Color?>(name: "--lit-segment-color", description: "the color to fill lit segments",
 		parseArgument: result =>
 		{
@@ -49,27 +54,31 @@ class Program
 			else
 			{
 				return litColor;
-			};
+			}
 		});
 		unlitOption.AddAlias("-u");
 
 		rootCommand.AddGlobalOption(templateOption);
 		rootCommand.AddOption(outputOption);
+		rootCommand.AddOption(packageTypeOption);
+		rootCommand.AddOption(packageNameOption);
 		rootCommand.AddOption(litOption);
 		rootCommand.AddOption(unlitOption);
 
-		rootCommand.SetHandler(Generate, templateOption, outputOption, litOption, unlitOption);
+		rootCommand.SetHandler(Generate, templateOption, outputOption, packageTypeOption, packageNameOption, litOption, unlitOption);
 
 		previewCommand.SetHandler(Preview, templateOption, outputOption);
 
 		return await rootCommand.InvokeAsync(args);
 	}
 
-	private static async Task Generate(FileInfo? template, DirectoryInfo? output, Color? lit, Color? unlit)
+	private static async Task Generate(FileInfo? template, DirectoryInfo? output, PackageType packageType, string packageName, Color? lit, Color? unlit)
 	{
 		System.Console.WriteLine("Processing...");
 		ArgumentNullException.ThrowIfNull(template);
 		ArgumentNullException.ThrowIfNull(output);
+		ArgumentNullException.ThrowIfNull(packageName);
+
 		lit ??= Color.Red;
 		unlit ??= Color.DimGray;
 		using var templateImage = await Image.LoadAsync<Rgb24>(template.FullName);
@@ -88,18 +97,29 @@ class Program
 			output.Create();
 		}
 
-		using (FolderExportWriter folderExportWriter = new(output.FullName))
+		using (IExportWriter exportWriter = CreateExportWriter(packageType, packageName, output))
 		{
 			foreach (var permutation in subsets)
 			{
 				System.Console.WriteLine($"Creating picture {areaIndex:000}");
 				using var activeImage = ImageProcessing.CreateDyedImage(baseImage, permutation.Subset, lit.Value);
-				folderExportWriter.Add(activeImage, permutation.Tag);
+				exportWriter.Add(activeImage, permutation.Tag);
 				++areaIndex;
 			}
 		}
 
 		System.Console.WriteLine("done.");
+	}
+
+	private static IExportWriter CreateExportWriter(PackageType packageType, string packageName, DirectoryInfo outputFolder)
+	{
+		return packageType switch
+		{
+			PackageType.Folder => new FolderExportWriter(outputFolder.FullName, packageName),
+			PackageType.Misskey => new MisskeyPackExportWriter(outputFolder.FullName, packageName),
+			PackageType.Mastodon => new MastodonPackExportWriter(outputFolder.FullName, packageName),
+			_ => throw new ArgumentOutOfRangeException(nameof(packageType), packageType, "The package type is not supported"),
+		};
 	}
 
 	private static async Task Preview(FileInfo? template, DirectoryInfo? output)
