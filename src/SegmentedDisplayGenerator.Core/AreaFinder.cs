@@ -28,11 +28,11 @@ public static class AreaFinder
 				newlyAddedCount = 0;
 				foreach (var pixel in currentList.ToArray())
 				{
-					foreach(var neighbor in PixelPosition.OrthogonalUnitVectors.Select(v => v + pixel))
-					if (searchSpace.BinarySearch(neighbor) >= 0)
-					{
-						if (currentList.Add(neighbor)) newlyAddedCount += 1;
-					}
+					foreach (var neighbor in PixelPosition.OrthogonalUnitVectors.Select(v => v + pixel))
+						if (searchSpace.BinarySearch(neighbor) >= 0)
+						{
+							if (currentList.Add(neighbor)) newlyAddedCount += 1;
+						}
 				}
 			} while (newlyAddedCount > 0);
 
