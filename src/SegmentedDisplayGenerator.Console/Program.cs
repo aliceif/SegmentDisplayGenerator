@@ -16,63 +16,74 @@ class Program
 		var rootCommand = new RootCommand("Program for generating segment display graphics");
 
 		var previewCommand = new Command(name: "preview", description: "Prints out a preview of the segments");
-		rootCommand.AddCommand(previewCommand);
+		rootCommand.Subcommands.Add(previewCommand);
 
-		var templateOption = new Option<FileInfo?>(name: "--template", description: "the template file for generating the graphics") { IsRequired = true };
-		templateOption.AddAlias("-t");
-		var outputOption = new Option<DirectoryInfo?>(name: "--output", description: "the directory to output the generated graphics in") { IsRequired = true };
-		outputOption.AddAlias("-o");
-		var packageTypeOption = new Option<PackageType>(name: "--packageType", description: "the package type to use for the output");
-		packageTypeOption.AddAlias("-p");
-		packageTypeOption.SetDefaultValue(PackageType.Folder);
-		var packageNameOption = new Option<string>(name: "--packageName", description: "the package name to use for the output") { IsRequired = true };
-		packageNameOption.AddAlias("-n");
-		var litOption = new Option<Color?>(name: "--lit-segment-color", description: "the color to fill lit segments",
-		parseArgument: result =>
+		var templateOption = new Option<FileInfo?>(name: "--template", "-t") { Recursive = true, Required = true, Description = "the template file for generating the graphics", };
+		var outputOption = new Option<DirectoryInfo?>(name: "--output", "-o") { Required = true, Description = "the directory to output the generated graphics in", };
+		var packageTypeOption = new Option<PackageType>(name: "--packageType", "-p") { Required = false, Description = "the package type to use for the output", DefaultValueFactory = _ => (PackageType.Folder), };
+		var packageNameOption = new Option<string>(name: "--packageName", "-n") { Required = true, Description = "the package name to use for the output" };
+		var litOption = new Option<Color?>(name: "--lit-segment-color", "-l")
 		{
-			if (!result.Tokens.Any()) return Color.Red;
-			if (!Color.TryParse(result.Tokens.Single().Value, out var litColor))
+			Description = "the color to fill lit segments",
+			CustomParser = result =>
 			{
-				result.ErrorMessage = "The color was not recgonized. Try using hex notation like in HTML.";
-				return Color.Red;
-			}
-			else { return litColor; };
-		});
-		litOption.AddAlias("-l");
-		var unlitOption = new Option<Color?>(name: "--unlit-segment-color", description: "the color to fill unlit segments",
-		parseArgument: result =>
-		{
-			if (!result.Tokens.Any())
-			{
-				return null;
-			}
-			if (!Color.TryParse(result.Tokens.Single().Value, out var litColor))
-			{
-				result.ErrorMessage = "The color was not recognized. Try using hex notation like in HTML.";
-				return null;
-			}
-			else
-			{
+				if (!result.Tokens.Any()) return Color.Red;
+				if (!Color.TryParse(result.Tokens.Single().Value, out var litColor))
+				{
+					result.AddError("The color was not recgonized. Try using hex notation like in HTML.");
+					return Color.Red;
+				}
+
 				return litColor;
 			}
-		});
-		unlitOption.AddAlias("-u");
+		};
+		var unlitOption = new Option<Color?>(name: "--unlit-segment-color", "-u")
+		{
+			Description = "the color to fill unlit segments",
+			CustomParser = result =>
+			{
+				if (!result.Tokens.Any())
+				{
+					return null;
+				}
 
-		rootCommand.AddGlobalOption(templateOption);
-		rootCommand.AddOption(outputOption);
-		rootCommand.AddOption(packageTypeOption);
-		rootCommand.AddOption(packageNameOption);
-		rootCommand.AddOption(litOption);
-		rootCommand.AddOption(unlitOption);
+				if (!Color.TryParse(result.Tokens.Single().Value, out var litColor))
+				{
+					result.AddError("The color was not recognized. Try using hex notation like in HTML.");
+					return null;
+				}
+				else
+				{
+					return litColor;
+				}
+			}
+		};
 
-		rootCommand.SetHandler(Generate, templateOption, outputOption, packageTypeOption, packageNameOption, litOption, unlitOption);
+		rootCommand.Options.Add(templateOption);
+		rootCommand.Options.Add(outputOption);
+		rootCommand.Options.Add(packageTypeOption);
+		rootCommand.Options.Add(packageNameOption);
+		rootCommand.Options.Add(litOption);
+		rootCommand.Options.Add(unlitOption);
 
-		previewCommand.SetHandler(Preview, templateOption, outputOption);
+		rootCommand.SetAction((parseResult, cancellationToken) => Generate(
+			parseResult.GetRequiredValue(templateOption),
+			parseResult.GetRequiredValue(outputOption),
+			parseResult.GetRequiredValue(packageTypeOption),
+			parseResult.GetRequiredValue(packageNameOption),
+			parseResult.GetValue(litOption),
+			parseResult.GetValue(unlitOption),
+			cancellationToken));
 
-		return await rootCommand.InvokeAsync(args);
+		previewCommand.SetAction((parseResult, cancellationToken) => Preview(
+			parseResult.GetRequiredValue(templateOption),
+			cancellationToken));
+
+		var parseResult = rootCommand.Parse(args);
+		return await parseResult.InvokeAsync();
 	}
 
-	private static async Task Generate(FileInfo? template, DirectoryInfo? output, PackageType packageType, string packageName, Color? lit, Color? unlit)
+	private static async Task Generate(FileInfo? template, DirectoryInfo? output, PackageType packageType, string packageName, Color? lit, Color? unlit, CancellationToken cancellationToken)
 	{
 		System.Console.WriteLine("Processing...");
 		ArgumentNullException.ThrowIfNull(template);
@@ -81,7 +92,7 @@ class Program
 
 		lit ??= Color.Red;
 		unlit ??= Color.DimGray;
-		using var templateImage = await Image.LoadAsync<Rgb24>(template.FullName);
+		using var templateImage = await Image.LoadAsync<Rgb24>(template.FullName, cancellationToken);
 
 		var areas = AreaFinder.FindAreas(ImageProcessing.ParsePixels(templateImage).ToArray()).ToArray();
 
@@ -90,7 +101,7 @@ class Program
 		using var baseImage = ImageProcessing.CreateDyedImage(templateImage, areas, unlit.Value);
 
 		var areaIndex = 1;
-		var subsets = ListOperations.CreateSubsets(areas).ToArray();
+		var subsets = areas.CreateSubsets().ToArray();
 
 		if (subsets.Length > 1)
 		{
@@ -122,11 +133,11 @@ class Program
 		};
 	}
 
-	private static async Task Preview(FileInfo? template, DirectoryInfo? output)
+	private static async Task Preview(FileInfo? template, CancellationToken cancellationToken)
 	{
 		System.Console.WriteLine("Processing...");
 		ArgumentNullException.ThrowIfNull(template);
-		using var templateImage = await Image.LoadAsync<Rgb24>(template.FullName);
+		using var templateImage = await Image.LoadAsync<Rgb24>(template.FullName, cancellationToken);
 
 		PixelPosition[] targetPixels = ImageProcessing.ParsePixels(templateImage).ToArray();
 		var areas = AreaFinder.FindAreas(targetPixels).ToArray();
@@ -148,6 +159,7 @@ class Program
 					plainPreviewBuilder.Append(".");
 				}
 			}
+
 			plainPreviewBuilder.AppendLine();
 		}
 
@@ -163,7 +175,6 @@ class Program
 			{
 				for (int x = 0; x < templateImage.Width; ++x)
 				{
-
 					if (areaPixels.TryGetValue(new PixelPosition(x, y), out var area))
 					{
 						areaPreviewBuilder.Append(area < 10 ? area.ToString() : area - 10 + 'A');
@@ -173,6 +184,7 @@ class Program
 						areaPreviewBuilder.Append(".");
 					}
 				}
+
 				areaPreviewBuilder.AppendLine();
 			}
 		}
